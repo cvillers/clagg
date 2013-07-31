@@ -40,9 +40,9 @@ public class DBConnectionManager
 		}
 	}
 	
-	private static Connection getConnection() throws SQLException
+	private static Connection getJDBCConnection() throws SQLException
 	{
-		String url = String.format("jdbc:postgresql://%s:%i/%s", host, port, dbName);
+		String url = String.format("jdbc:postgresql://%s:%d/%s?sslfactory=org.postgresql.ssl.NonValidatingFactory", host, port, dbName);
 		
 		Properties props = new Properties();
 		
@@ -51,5 +51,10 @@ public class DBConnectionManager
 		props.setProperty("ssl", ssl.toString());
 		
 		return DriverManager.getConnection(url, props);
+	}
+	
+	public static DBConnection getConnection() throws SQLException
+	{
+		return new DBConnection(getJDBCConnection());
 	}
 }
