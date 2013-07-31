@@ -10,9 +10,11 @@ import java.util.Properties;
 
 import org.apache.log4j.*;
 
+import rs.ville.clagg.crawler.database.DBConnection;
+import rs.ville.clagg.crawler.database.DBConnectionManager;
+import rs.ville.clagg.crawler.database.SiteQuery;
 import rs.ville.clagg.sites.CraigslistHandler;
 import rs.ville.clagg.sites.SiteHandler;
-import rs.ville.clagg.sites.SiteQuery;
 
 public class App 
 {
@@ -71,8 +73,12 @@ public class App
         	{
         		SiteHandler handler = (SiteHandler)handlers.get(q.getSiteName()).newInstance();
         		
-        		handler.processSearchURL(id, q.getURL());
+        		handler.processSearchURL(db, id, q.getURL());
         	}
+        	
+        	db.finishJob(id);
+        	
+        	db.close();
         }
         catch(SQLException ex)
         {

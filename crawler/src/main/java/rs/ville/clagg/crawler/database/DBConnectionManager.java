@@ -1,4 +1,4 @@
-package rs.ville.clagg.crawler;
+package rs.ville.clagg.crawler.database;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
