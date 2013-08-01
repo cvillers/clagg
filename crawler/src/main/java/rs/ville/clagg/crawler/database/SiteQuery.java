@@ -4,7 +4,7 @@ public class SiteQuery
 {
 	private String siteName;
 	
-	private String url;
+	private String feedURL;
 
 	/**
 	 * @return The name of the site (for internal usage)
@@ -17,14 +17,14 @@ public class SiteQuery
 	/**
 	 * @return The URL
 	 */
-	public String getURL()
+	public String getFeedURL()
 	{
-		return url;
+		return feedURL;
 	}
 
-	public SiteQuery(String siteName, String url)
+	public SiteQuery(String siteName, String feedURL)
 	{
 		this.siteName = siteName;
-		this.url = url;
+		this.feedURL = feedURL;
 	}
 }

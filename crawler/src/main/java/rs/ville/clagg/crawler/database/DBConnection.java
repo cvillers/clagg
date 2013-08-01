@@ -1,7 +1,11 @@
 package rs.ville.clagg.crawler.database;
 
-import java.sql.*;
-import java.util.HashMap;
+import java.math.BigDecimal;
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Types;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -102,27 +106,26 @@ public class DBConnection
 		proc.setString(2, url);
 		proc.execute();
 		
-		ResultSet results = (ResultSet) proc.getObject(1);
-		if(results.next())
-		{
-		    retVal = results.getBoolean("listing_exists");
-		}
-		results.close();
+		retVal = proc.getBoolean(1);
+
 		proc.close();
 		
 		return retVal;
 	}
 	
-	public void createListing(String url, double lat, double lng, String address) throws SQLException
+	public void createListing(long jobID, String url, String title, int price, double lat, double lng, String address) throws SQLException
 	{	
 		connection.setAutoCommit(false);
 
-		CallableStatement proc = connection.prepareCall("{ ? = call listing_create(?, ?, ?, ?) }");
+		CallableStatement proc = connection.prepareCall("{ ? = call listing_create(?, ?, ?, ?, ?, ?, ?) }");
 		proc.registerOutParameter(1, Types.OTHER);
-		proc.setString(2, url);
-		proc.setDouble(3, lat);
-		proc.setDouble(4, lng);
-		proc.setString(5, address);
+		proc.setLong(2, jobID);
+		proc.setString(3, url);
+		proc.setString(4, title);
+		proc.setInt(5, price);
+		proc.setBigDecimal(6, new BigDecimal(lat));
+		proc.setBigDecimal(7, new BigDecimal(lng));
+		proc.setString(8, address);
 		proc.execute();
 		
 		// the results row has two cursors: the inserted listing and the location that was used (existing or created)
@@ -138,6 +141,17 @@ public class DBConnection
 			}
 		}
 		results.close();
+		proc.close();
+	}
+	
+	public void deleteListings(List<String> urls) throws SQLException
+	{
+		connection.setAutoCommit(false);
+
+		CallableStatement proc = connection.prepareCall("{ call listing_delete(?) }");
+		proc.setArray(1, connection.createArrayOf("character varying", urls.toArray()));
+		proc.execute();
+		
 		proc.close();
 	}
 }

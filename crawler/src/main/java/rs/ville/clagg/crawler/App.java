@@ -73,7 +73,7 @@ public class App
         	{
         		SiteHandler handler = (SiteHandler)handlers.get(q.getSiteName()).newInstance();
         		
-        		handler.processSearchURL(db, id, q.getURL());
+        		handler.processSearchURL(db, id, q.getFeedURL());
         	}
         	
         	db.finishJob(id);
