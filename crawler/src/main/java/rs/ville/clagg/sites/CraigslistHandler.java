@@ -124,10 +124,13 @@ public class CraigslistHandler implements SiteHandler
 				{
 					if(ex.getStatusCode() == 404)
 					{
+						log.info(String.format("Removing listing %s", fullURL));
 						listingsToDelete.add(fullURL);
 						continue;
 					}
 				}
+				
+				log.info(String.format("Adding listing %s", fullURL));
 				
 				String latData = el.attr("data-latitude");
 				String lngData = el.attr("data-longitude");
