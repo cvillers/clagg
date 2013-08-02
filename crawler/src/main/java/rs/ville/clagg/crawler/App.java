@@ -11,7 +11,6 @@ import java.util.Properties;
 import org.apache.log4j.*;
 
 import rs.ville.clagg.crawler.database.DBConnection;
-import rs.ville.clagg.crawler.database.DBConnectionManager;
 import rs.ville.clagg.crawler.database.SiteQuery;
 import rs.ville.clagg.sites.CraigslistHandler;
 import rs.ville.clagg.sites.SiteHandler;
@@ -57,11 +56,11 @@ public class App
 			log.fatal("Exception while loading crawler.properties", ex);
 		}
         
-        DBConnectionManager.init(props);
+        DBConnection.init(props);
         
         try
         {
-        	DBConnection db = DBConnectionManager.getConnection();
+        	DBConnection db = new DBConnection();
         	
         	long id = db.createJob(DBConnection.JOBTYPE_CRAWL);
         	
@@ -77,8 +76,6 @@ public class App
         	}
         	
         	db.finishJob(id);
-        	
-        	db.close();
         }
         catch(SQLException ex)
         {

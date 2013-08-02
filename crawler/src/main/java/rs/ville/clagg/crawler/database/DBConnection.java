@@ -5,23 +5,50 @@ import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.PreparedStatement;
 import java.sql.Types;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Properties;
+
+import org.postgresql.ds.PGPoolingDataSource;
 
 
 public class DBConnection
 {
-	private Connection connection;
-
-	public DBConnection(Connection conn)
+	private static Properties properties;
+	private static boolean inited;
+	private static PGPoolingDataSource source;
+	
+	public static void init(Properties props)
 	{
-		connection = conn;
+		properties = props;
+		
+		source = new PGPoolingDataSource();
+		
+		source.setDataSourceName("clagg");
+		
+		source.setSsl(new Boolean(properties.getProperty("db.ssl")));
+		source.setSslfactory(properties.getProperty("db.ssl-factory", null));
+		
+		source.setServerName(properties.getProperty("db.host"));
+		source.setPortNumber(new Integer(properties.getProperty("db.port")));
+		
+		source.setDatabaseName(properties.getProperty("db.name"));
+		source.setUser(properties.getProperty("db.username"));
+		source.setPassword(properties.getProperty("db.password"));
+		
+		source.setMaxConnections(10);
+		
+		inited = true;
 	}
 	
-	public void close() throws SQLException
+	private Connection getConnection() throws SQLException
 	{
-		this.connection.close();
+		if(!inited)
+			throw new RuntimeException("Tried to get a connection before the connection class was initialized");
+		
+		return source.getConnection();
 	}
 	
 	/**
@@ -31,6 +58,8 @@ public class DBConnection
 	public static final short JOBTYPE_CRAWL = 1;
 	public long createJob(short type) throws SQLException
 	{
+		Connection connection = getConnection();
+		
 		long retVal = 0;
 		
 		connection.setAutoCommit(false);
@@ -40,6 +69,8 @@ public class DBConnection
 		proc.setShort(2, type);
 		proc.execute();
 		
+		connection.commit();
+		
 		ResultSet jobResults = (ResultSet) proc.getObject(1);
 		if(jobResults.next())
 		{
@@ -47,6 +78,8 @@ public class DBConnection
 		}
 		jobResults.close();
 		proc.close();
+		
+		connection.close();
 		
 		return retVal;
 	}
@@ -58,6 +91,8 @@ public class DBConnection
 	 */
 	public void finishJob(long jobID) throws SQLException
 	{
+		Connection connection = getConnection();
+		
 		long retVal = 0;
 		
 		connection.setAutoCommit(false);
@@ -65,6 +100,10 @@ public class DBConnection
 		CallableStatement proc = connection.prepareCall("{ call job_finish(?) }");
 		proc.setLong(1, jobID);
 		proc.execute();
+		
+		connection.commit();
+		
+		connection.close();
 		
 		proc.close();
 	}
@@ -76,6 +115,8 @@ public class DBConnection
 	 */
 	public List<SiteQuery> getQueryURLs() throws SQLException
 	{
+		Connection connection = getConnection();
+		
 		List<SiteQuery> retVal = new LinkedList<SiteQuery>();
 		
 		connection.setAutoCommit(false);
@@ -83,20 +124,27 @@ public class DBConnection
 		CallableStatement proc = connection.prepareCall("{ ? = call query_get_all('query_cursor') }");
 		proc.registerOutParameter(1, Types.OTHER);
 		proc.execute();
-		
+	
 		ResultSet results = (ResultSet) proc.getObject(1);
 		while(results.next())
 		{
 		    retVal.add(new SiteQuery(results.getString("site_name"), results.getString("url")));
 		}
+		
+		connection.commit();
+		
 		results.close();
 		proc.close();
+		
+		connection.close();
 		
 		return retVal;
 	}
 	
 	public boolean listingExists(String url) throws SQLException
 	{
+		Connection connection = getConnection();
+		
 		boolean retVal = false;
 		
 		connection.setAutoCommit(false);
@@ -105,53 +153,71 @@ public class DBConnection
 		proc.registerOutParameter(1, Types.BOOLEAN);
 		proc.setString(2, url);
 		proc.execute();
-		
+	
 		retVal = proc.getBoolean(1);
 
+		connection.commit();
+		
 		proc.close();
+		
+		connection.close();
 		
 		return retVal;
 	}
 	
 	public void createListing(long jobID, String url, String title, int price, double lat, double lng, String address) throws SQLException
-	{	
+	{
+		Connection connection = getConnection();
+		
 		connection.setAutoCommit(false);
 
-		CallableStatement proc = connection.prepareCall("{ ? = call listing_create(?, ?, ?, ?, ?, ?, ?) }");
-		proc.registerOutParameter(1, Types.OTHER);
-		proc.setLong(2, jobID);
-		proc.setString(3, url);
-		proc.setString(4, title);
-		proc.setInt(5, price);
-		proc.setBigDecimal(6, new BigDecimal(lat));
-		proc.setBigDecimal(7, new BigDecimal(lng));
-		proc.setString(8, address);
+		//CallableStatement proc = connection.prepareCall("{ ? = call listing_create(?, ?, ?, ?, ?, ?, ?) }");
+		PreparedStatement proc = connection.prepareStatement("select * from listing_create(?, ?, ?, ?, ?, ?, ?)");
+		//proc.registerOutParameter(1, Types.OTHER);
+		proc.setLong(1, jobID);
+		proc.setString(2, url);
+		proc.setString(3, title);
+		proc.setInt(4, price);
+		proc.setBigDecimal(5, new BigDecimal(lat));
+		proc.setBigDecimal(6, new BigDecimal(lng));
+		proc.setString(7, address);
 		proc.execute();
 		
 		// the results row has two cursors: the inserted listing and the location that was used (existing or created)
-		ResultSet results = (ResultSet) proc.getObject(1);
+		ResultSet results = (ResultSet) proc.getResultSet();
 		if(results.next())
 		{
-			ResultSet listingRes = (ResultSet)results.getObject(0);
-			ResultSet locationRes = (ResultSet)results.getObject(1);
+			ResultSet listingRes = (ResultSet)results.getObject(1);
+			ResultSet locationRes = (ResultSet)results.getObject(2);
 			
 			if(listingRes.next())
 			{
 				//listingRes.get
 			}
 		}
+		
+		connection.commit();
+		
 		results.close();
 		proc.close();
+		
+		connection.close();
 	}
 	
 	public void deleteListings(List<String> urls) throws SQLException
 	{
+		Connection connection = getConnection();
+		
 		connection.setAutoCommit(false);
 
 		CallableStatement proc = connection.prepareCall("{ call listing_delete(?) }");
-		proc.setArray(1, connection.createArrayOf("character varying", urls.toArray()));
+		proc.setArray(1, connection.createArrayOf("varchar", urls.toArray()));
 		proc.execute();
 		
+		connection.commit();
+		
 		proc.close();
+		
+		connection.close();
 	}
 }

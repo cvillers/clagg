@@ -152,7 +152,7 @@ public class CraigslistHandler implements SiteHandler
 				int price = Integer.parseInt(priceData);
 				
 				// TODO reverse-geocode lat/lng into address
-				db.createListing(jobID, fullURL, title, price, lat, lng, "");
+				db.createListing(jobID, fullURL, title, price, lat, lng, "x");
 			}
 
 			db.deleteListings(listingsToDelete);
