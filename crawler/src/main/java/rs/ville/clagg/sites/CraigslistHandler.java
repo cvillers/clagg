@@ -61,6 +61,13 @@ public class CraigslistHandler implements SiteHandler
 				Element link = el.select("span.pl a").first();
 				String fullURL = String.format("%s://%s%s", url.getProtocol(), url.getHost(), link.attr("href"));
 				
+				if(db.listingExists(fullURL))
+				{
+					log.info(String.format("Skipping existing listing %s", fullURL));
+					// TODO open the page and see if there's a modification date, if so process it in this loop for safety
+					continue;
+				}
+				
 				// first, determine if the listing disappeared, and mark it for deletion if so
 				try
 				{
