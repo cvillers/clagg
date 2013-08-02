@@ -100,7 +100,7 @@ public class CraigslistHandler implements SiteHandler
 			// TODO paging - right now we only read the top 100 rows
 
 			URL url = new URL(urlPath);
-
+			
 			Connection listingConn = Jsoup.connect(urlPath.toString()).ignoreHttpErrors(false);
 			
 			Document listing = listingConn.get();
@@ -147,7 +147,7 @@ public class CraigslistHandler implements SiteHandler
 				String title = link.html();
 				
 				// TODO handle empty string here
-				String priceData = el.select("span.l2 span.pnr span.price").html().replaceAll("[^0-9]", "");
+				String priceData = el.select("span.price").html().replaceAll("[^0-9]", "");
 				
 				if(priceData.length() == 0)
 					priceData = "0";
