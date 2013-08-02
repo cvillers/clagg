@@ -43,60 +43,6 @@ public class CraigslistHandler implements SiteHandler
 		
 		try
 		{
-			/*SyndFeedInput input = new SyndFeedInput();
-			URL url = new URL(urlPath);
-			XmlReader xmlReader = new XmlReader(new URL(urlPath));
-			SyndFeed feed = input.build(xmlReader);
-			
-			//RSS feed = new RSSDoc().readRSSToBean(new URL(url));
-			LinkedList<String> listingsToProcess = new LinkedList<String>();
-					
-			// quickly determine what we've already seen before
-			for(Object obj : feed.getEntries())
-			{
-				SyndEntryImpl entry = (SyndEntryImpl)obj;
-				
-				if(db.listingExists(entry.getLink()))
-				{
-					continue;
-				}
-				else
-				{
-					listingsToProcess.add(entry.getLink());
-				}
-			}
-			
-			for(String listing : listingsToProcess)
-			{
-				Document doc = Jsoup.connect(listing).get();
-				
-				Element mapNode = doc.select("div#leaflet").first();
-				Element addrNode = doc.select("section.cltags p.mapaddress").first();
-				
-				String address;
-				double lat, lng;
-				
-				if(mapNode == null && addrNode != null)
-				{
-					// TODO: fall back to determining lat and long using geocoder
-					log.warn("TODO: fall back to geocoder to find lat and long");
-				}
-				else if(mapNode != null && addrNode != null)
-				{
-					lat = Double.parseDouble(mapNode.attr("data-latitude"));
-					lng = Double.parseDouble(mapNode.attr("data-longitude"));
-					address = addrNode.html().replaceAll("<(.*)>", "");		// remove inner map links
-					
-					log.debug(String.format("creating listing: url=%s, lat=%f, lng=%f, address=%s", listing, lat, lng, address));
-					
-					db.createListing(jobID, listing, doc.title(), lat, lng, address);
-				}
-				else
-				{
-					log.warn(String.format("Cannot yet parse %s", listing));
-				}
-			}*/
-			
 			// TODO paging - right now we only read the top 100 rows
 
 			URL url = new URL(urlPath);
