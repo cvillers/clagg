@@ -44,6 +44,7 @@ public class CraigslistHandler implements SiteHandler
 		try
 		{
 			// TODO paging - right now we only read the top 100 rows
+			// and set up the queries table to have all the pages
 
 			URL url = new URL(urlPath);
 			
