@@ -1,30 +1,20 @@
 package rs.ville.clagg.sites;
 
-import java.net.MalformedURLException;
+import java.io.IOException;
 import java.net.URL;
 import java.util.LinkedList;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
-
 import org.jsoup.Connection;
 import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.select.*;
+import org.jsoup.select.Elements;
 
-import rs.ville.clagg.crawler.database.DBConnection;
+import rs.ville.clagg.database.DBConnection;
 
-/*import com.colorfulsoftware.rss.Item;
-import com.colorfulsoftware.rss.RSS;
-import com.colorfulsoftware.rss.RSSDoc;*/
-
-import com.sun.syndication.feed.*;
-import com.sun.syndication.feed.synd.SyndEntryImpl;
-import com.sun.syndication.feed.synd.SyndFeed;
-import com.sun.syndication.io.SyndFeedInput;
-import com.sun.syndication.io.XmlReader;
 
 /**
  * @author cmv
@@ -35,7 +25,7 @@ public class CraigslistHandler implements SiteHandler
 	private final static Logger log = LogManager.getLogger(CraigslistHandler.class);
 	
 	/**
-	 * @see rs.ville.clagg.sites.SiteHandler#processURL(java.lang.String)
+	 * @see rs.ville.clagg.sites.SiteHandler#processSearchURL(DBConnection, long, String)
 	 */
 	public boolean processSearchURL(DBConnection db, long jobID, String urlPath) 
 	{
@@ -44,7 +34,7 @@ public class CraigslistHandler implements SiteHandler
 		try
 		{
 			// TODO paging - right now we only read the top 100 rows
-			// and set up the queries table to have all the pages
+			// and set up the queries table to have query URLs for each oage
 
 			URL url = new URL(urlPath);
 			
@@ -64,27 +54,19 @@ public class CraigslistHandler implements SiteHandler
 				
 				if(db.listingExists(fullURL))
 				{
-					log.info(String.format("Skipping existing listing %s", fullURL));
+					log.debug(String.format("Skipping existing listing %s", fullURL));
 					// TODO open the page and see if there's a modification date, if so process it in this loop for safety
 					continue;
 				}
 				
-				// first, determine if the listing disappeared, and mark it for deletion if so
-				try
+				// first, determine if the listing disappeared between the time we got the page and the time we are parsing it
+				if(!validateListingURL(db, fullURL))
 				{
-					Jsoup.connect(fullURL).get();
-				}
-				catch(HttpStatusException ex)
-				{
-					if(ex.getStatusCode() == 404)
-					{
-						log.info(String.format("Removing listing %s", fullURL));
-						listingsToDelete.add(fullURL);
-						continue;
-					}
+					log.debug(String.format("Skipping disappeared listing %s", fullURL));
+					continue;
 				}
 				
-				log.info(String.format("Adding listing %s", fullURL));
+				log.debug(String.format("Adding listing %s", fullURL));
 				
 				String latData = el.attr("data-latitude");
 				String lngData = el.attr("data-longitude");
@@ -111,8 +93,6 @@ public class CraigslistHandler implements SiteHandler
 				// TODO reverse-geocode lat/lng into address
 				db.createListing(jobID, fullURL, title, price, lat, lng, "x");
 			}
-
-			db.deleteListings(listingsToDelete);
 		}
 		/*catch (MalformedURLException ex)
 		{
@@ -123,6 +103,32 @@ public class CraigslistHandler implements SiteHandler
 			log.error("Exception while scraping results page", ex);
 		}
 		
+		return true;
+	}
+
+	/**
+	 * @see rs.ville.clagg.sites.SiteHandler#validateURL(DBConnection, String)
+	 */
+	public boolean validateListingURL(DBConnection database, String url)
+	{
+		try
+		{
+			Jsoup.connect(url).get();
+			return true;
+		}
+		catch(HttpStatusException ex)
+		{
+			if(ex.getStatusCode() == 404)
+			{
+				return false;
+			}
+		}
+		catch (IOException ex)
+		{
+			log.warn(String.format("Got IOException while validating listing URL %s", url), ex);
+		}
+		
+		// return true so its status doesn't change and maybe it can be recovered from next time
 		return true;
 	}
 

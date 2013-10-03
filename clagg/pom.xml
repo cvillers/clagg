@@ -3,11 +3,11 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>rs.ville.clagg</groupId>
-  <artifactId>crawler</artifactId>
+  <artifactId>clagg</artifactId>
   <version>0.0.1</version>
   <packaging>jar</packaging>
 
-  <name>crawler</name>
+  <name>clagg</name>
   <url>http://ville.rs</url>
 
   <properties>
@@ -34,11 +34,11 @@
 	  <version>1.2.17</version>
     </dependency>
     
-    <dependency>
+    <!-- <dependency>
 	  <groupId>com.colorfulsoftware</groupId>
 	  <artifactId>rsspect</artifactId>
 	  <version>1.0.3</version>
-	</dependency>
+	</dependency>-->
 	
 	<dependency>
 	  <groupId>org.jsoup</groupId>
@@ -46,13 +46,11 @@
 	  <version>1.7.2</version>
 	</dependency>
 	
-	<dependency>
+	<!-- <dependency>
 	  <groupId>rome</groupId>
 	  <artifactId>rome</artifactId>
 	  <version>1.0</version>
-	</dependency>
-            
-            
+	</dependency>-->   
   </dependencies>
   
   <build>
@@ -82,9 +80,10 @@
 	          </descriptorRefs>
 	          <archive>
 	            <manifest>
-	              <mainClass>rs.ville.clagg.crawler.App</mainClass>
+	              <mainClass>rs.ville.clagg.App</mainClass>
 	            </manifest>
 	          </archive>
+	          
 	        </configuration>
 	        <executions>
 	          <execution>

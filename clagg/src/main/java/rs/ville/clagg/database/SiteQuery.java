@@ -1,4 +1,4 @@
-package rs.ville.clagg.crawler.database;
+package rs.ville.clagg.database;
 
 public class SiteQuery
 {

@@ -1,4 +1,4 @@
-package rs.ville.clagg.crawler.database;
+package rs.ville.clagg.database;
 
 import java.math.BigDecimal;
 import java.sql.CallableStatement;
@@ -56,6 +56,7 @@ public class DBConnection
 	 * @return The new job's ID.
 	 */
 	public static final short JOBTYPE_CRAWL = 1;
+	public static final short JOBTYPE_VALIDATE = 2;
 	public long createJob(short type) throws SQLException
 	{
 		Connection connection = getConnection();
@@ -204,14 +205,14 @@ public class DBConnection
 		connection.close();
 	}
 	
-	public void deleteListings(List<String> urls) throws SQLException
+	public void deleteListings(List<Long> urls) throws SQLException
 	{
 		Connection connection = getConnection();
 		
 		connection.setAutoCommit(false);
 
 		CallableStatement proc = connection.prepareCall("{ call listing_delete(?) }");
-		proc.setArray(1, connection.createArrayOf("varchar", urls.toArray()));
+		proc.setArray(1, connection.createArrayOf("bigint", urls.toArray()));
 		proc.execute();
 		
 		connection.commit();
@@ -219,5 +220,40 @@ public class DBConnection
 		proc.close();
 		
 		connection.close();
+	}
+	
+	/**
+	 * Gets all listings.
+	 * @param includeDeleted Set to <pre>true</pre> to also get ones marked as deleted.
+	 * @return A list of listing objects. 
+	 * @throws SQLException
+	 */
+	public List<Listing> getListings(boolean includeDeleted) throws SQLException
+	{
+		Connection connection = getConnection();
+		
+		List<Listing> retVal = new LinkedList<Listing>();
+		
+		connection.setAutoCommit(false);
+
+		CallableStatement proc = connection.prepareCall("{ ? = call listing_get_all(?) }");
+		proc.registerOutParameter(1, Types.OTHER);
+		proc.setBoolean(2, includeDeleted);
+		proc.execute();
+	
+		ResultSet results = (ResultSet) proc.getObject(1);
+		while(results.next())
+		{
+		    retVal.add(new Listing(results.getLong("id"), results.getString("url")));
+		}
+		
+		connection.commit();
+		
+		results.close();
+		proc.close();
+		
+		connection.close();
+		
+		return retVal;
 	}
 }
