@@ -59,13 +59,6 @@ public class CraigslistHandler implements SiteHandler
 					continue;
 				}
 				
-				// first, determine if the listing disappeared between the time we got the page and the time we are parsing it
-				if(!validateListingURL(db, fullURL))
-				{
-					log.debug(String.format("Skipping disappeared listing %s", fullURL));
-					continue;
-				}
-				
 				log.debug(String.format("Adding listing %s", fullURL));
 				
 				String latData = el.attr("data-latitude");
@@ -111,6 +104,8 @@ public class CraigslistHandler implements SiteHandler
 	 */
 	public boolean validateListingURL(DBConnection database, String url)
 	{
+		log.debug(String.format("Validating listing URL %s", url));
+
 		try
 		{
 			Jsoup.connect(url).get();
