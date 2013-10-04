@@ -228,7 +228,7 @@ public class DBConnection
 	 * @return A list of listing objects. 
 	 * @throws SQLException
 	 */
-	public List<Listing> getListings(boolean includeDeleted) throws SQLException
+	public List<Listing> getListings(boolean includeDeleted, long pageSize, long pageNumber) throws SQLException
 	{
 		Connection connection = getConnection();
 		
@@ -236,9 +236,11 @@ public class DBConnection
 		
 		connection.setAutoCommit(false);
 
-		CallableStatement proc = connection.prepareCall("{ ? = call listing_get_all(?) }");
+		CallableStatement proc = connection.prepareCall("{ ? = call listing_get_all(?, 'listings', ?, ?) }");
 		proc.registerOutParameter(1, Types.OTHER);
 		proc.setBoolean(2, includeDeleted);
+		proc.setLong(3, pageSize);
+		proc.setLong(4, pageNumber);
 		proc.execute();
 	
 		ResultSet results = (ResultSet) proc.getObject(1);
@@ -250,6 +252,91 @@ public class DBConnection
 		connection.commit();
 		
 		results.close();
+		proc.close();
+		
+		connection.close();
+		
+		return retVal;
+	}
+	
+	/**
+	 * Gets all listings added since the last validation job.
+	 * @param includeDeleted Set to <pre>true</pre> to also get ones marked as deleted.
+	 * @return A list of listing objects. 
+	 * @throws SQLException
+	 */
+	public List<Listing> getUnvalidatedListings(boolean includeDeleted, long pageSize, long pageNumber) throws SQLException
+	{
+		Connection connection = getConnection();
+		
+		List<Listing> retVal = new LinkedList<Listing>();
+		
+		connection.setAutoCommit(false);
+
+		CallableStatement proc = connection.prepareCall("{ ? = call listing_get_unvalidated(?, 'listings', ?, ?) }");
+		proc.registerOutParameter(1, Types.OTHER);
+		proc.setBoolean(2, includeDeleted);
+		proc.setLong(3, pageSize);
+		proc.setLong(4, pageNumber);
+		proc.execute();
+	
+		ResultSet results = (ResultSet) proc.getObject(1);
+		while(results.next())
+		{
+		    retVal.add(new Listing(results.getLong("id"), results.getString("url")));
+		}
+		
+		connection.commit();
+		
+		results.close();
+		proc.close();
+		
+		connection.close();
+		
+		return retVal;
+	}
+	
+	public long getListingCount(boolean includeDeleted) throws SQLException
+	{
+		Connection connection = getConnection();
+		
+		long retVal = 0;
+		
+		connection.setAutoCommit(false);
+
+		CallableStatement proc = connection.prepareCall("{ ? = call listing_get_count(?) }");
+		proc.registerOutParameter(1, Types.BIGINT);
+		proc.setBoolean(2, includeDeleted);
+		proc.execute();
+	
+		retVal = proc.getLong(1);
+		
+		connection.commit();
+
+		proc.close();
+		
+		connection.close();
+		
+		return retVal;
+	}
+	
+	public long getUnvalidatedListingCount(boolean includeDeleted) throws SQLException
+	{
+		Connection connection = getConnection();
+		
+		long retVal = 0;
+		
+		connection.setAutoCommit(false);
+
+		CallableStatement proc = connection.prepareCall("{ ? = call listing_get_unvalidated_count(?) }");
+		proc.registerOutParameter(1, Types.BIGINT);
+		proc.setBoolean(2, includeDeleted);
+		proc.execute();
+	
+		retVal = proc.getLong(1);
+		
+		connection.commit();
+
 		proc.close();
 		
 		connection.close();

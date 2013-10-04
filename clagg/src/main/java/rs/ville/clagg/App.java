@@ -49,27 +49,39 @@ public class App
     	db.finishJob(crawlID);
 	}
 	
-	private static void validate(DBConnection db) throws SQLException, InstantiationException, IllegalAccessException
+
+	private static void validate(DBConnection db, boolean all) throws SQLException, InstantiationException, IllegalAccessException
 	{
-    	long validateID = db.createJob(DBConnection.JOBTYPE_CRAWL);
+		final long PAGE_SIZE = 100;
+		
+    	long validateID = db.createJob(DBConnection.JOBTYPE_VALIDATE);
     	
     	log.debug("Validation job ID: " + validateID);
 
-    	List<Listing> listings = db.getListings(false);
-    	List<Long> toDelete = new LinkedList<Long>();
-    	
-    	for(Listing l: listings)
+    	long total = db.getUnvalidatedListingCount(all);
+
+    	for(long page = 0; page <= total / PAGE_SIZE; page++)
     	{
-    		// FIXME we don't actually have a way to relate a listing to the query it came from
-    		// so for now, hardcode craigslist, but somehow that will need to get resolved
-    		// most likely option is to set it going forward, and to assume craigslist if it comes back as null
-    		SiteHandler handler = (SiteHandler)handlers.get("craigslist").newInstance();
+    		List<Listing> listings = db.getUnvalidatedListings(all, 100, page);
     		
-    		if(!handler.validateListingURL(db, l.getURL()))
-    			toDelete.add(l.getID());
+    		List<Long> toDelete = new LinkedList<Long>();
+    		
+	    	for(Listing l: listings)
+	    	{
+	    		// FIXME we don't actually have a way to relate a listing to the query it came from
+	    		// so for now, hardcode craigslist, but somehow that will need to get resolved
+	    		// most likely option is to set it going forward, and to assume craigslist for null
+	    		SiteHandler handler = (SiteHandler)handlers.get("craigslist").newInstance();
+	    		
+	    		if(!handler.validateListingURL(db, l.getURL()))
+	    			toDelete.add(l.getID());
+	    	}
+	    	
+    		log.info(String.format("Out of %d listings, deleting %d", PAGE_SIZE, toDelete.size()));
+    		log.info("---------------------------------------------------");
+    		
+    		db.deleteListings(toDelete);
     	}
-    	
-    	db.deleteListings(toDelete);
     	
     	db.finishJob(validateID);
 	}
@@ -111,11 +123,13 @@ public class App
         	if(args.length > 0 && args[0].equals("crawl"))
         		crawl(db);
         	else if(args.length > 0 && args[0].equals("validate"))
-        		validate(db);
+        		validate(db, false);
+        	else if(args.length > 0 && args[0].equals("validate-all"))
+        		validate(db, true);
         	else
         	{
         		crawl(db);
-        		validate(db);
+        		validate(db, false);
         	}
         }
         catch(SQLException ex)
