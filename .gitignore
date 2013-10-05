@@ -74,7 +74,7 @@ obj/
 _ReSharper*/
 [Tt]est[Rr]esult*
 
-dotnet/Clagg/Connections.config
+dotnet/Clagg/Downloader/Connections.config
 
 # don't commit packages, but keep the package config
 dotnet/Clagg/packages/*
