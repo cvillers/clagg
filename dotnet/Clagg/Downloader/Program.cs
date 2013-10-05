@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,9 +14,13 @@ namespace Downloader
 	{
 		static void Main(string[] args)
 		{
-			NpgsqlConnection connection = new NpgsqlConnection(ConfigurationManager.ConnectionStrings["ClaggDB"].ConnectionString);
+			DbConnection db = new DbConnection();
 
-			connection.Open();
+			var id = db.CreateJob(JobTypes.Download);
+
+			Console.WriteLine("New job id {0}", id);
+
+			db.FinishJob(id);
 		}
 	}
 }
