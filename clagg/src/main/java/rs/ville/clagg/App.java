@@ -62,7 +62,7 @@ public class App
 
     	for(long page = 0; page <= total / PAGE_SIZE; page++)
     	{
-    		List<Listing> listings = db.getUnvalidatedListings(all, 100, page);
+    		List<Listing> listings = db.getUnvalidatedListings(all, PAGE_SIZE, page);
     		
     		List<Long> toDelete = new LinkedList<Long>();
     		
