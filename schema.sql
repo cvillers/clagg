@@ -345,7 +345,7 @@ CREATE TABLE jobs (
     started_on timestamp with time zone NOT NULL,
     ended_on timestamp with time zone,
     type smallint NOT NULL,
-    CONSTRAINT "CK_job_type" CHECK ((type = ANY (ARRAY[1, 2])))
+    CONSTRAINT "CK_job_type" CHECK ((type = ANY (ARRAY[1, 2, 3])))
 );
 
 
