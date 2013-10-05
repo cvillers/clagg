@@ -44,3 +44,36 @@ nosetests.xml
 .mr.developer.cfg
 
 clagg/src/main/resources/crawler.properties
+
+###### VS junk
+#ignore thumbnails created by windows
+Thumbs.db
+#Ignore files build by Visual Studio
+*.obj
+*.exe
+*.pdb
+*.user
+*.aps
+*.pch
+*.vspscc
+*_i.c
+*_p.c
+*.ncb
+*.suo
+*.tlb
+*.tlh
+*.cache
+*.ilk
+*.log
+[Bb]in
+[Dd]ebug*/
+*.lib
+*.sbr
+obj/
+[Rr]elease*/
+_ReSharper*/
+[Tt]est[Rr]esult*
+
+# don't commit packages, but keep the package config
+dotnet/Clagg/packages/*
+!dotnet/Clagg/packages/repositories.config
