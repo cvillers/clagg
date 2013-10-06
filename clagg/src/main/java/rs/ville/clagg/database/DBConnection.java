@@ -38,7 +38,7 @@ public class DBConnection
 		source.setUser(properties.getProperty("db.username"));
 		source.setPassword(properties.getProperty("db.password"));
 		
-		source.setMaxConnections(10);
+		source.setMaxConnections(Integer.parseInt(props.getProperty("clagg.numthreads")));
 		
 		inited = true;
 	}
@@ -273,7 +273,7 @@ public class DBConnection
 		
 		connection.setAutoCommit(false);
 
-		CallableStatement proc = connection.prepareCall("{ ? = call listing_get_unvalidated(?, 'listings', ?, ?) }");
+		CallableStatement proc = connection.prepareCall("{ ? = call listing_get_unvalidated(?, 'listings-" + pageNumber + "', ?, ?) }");
 		proc.registerOutParameter(1, Types.OTHER);
 		proc.setBoolean(2, includeDeleted);
 		proc.setLong(3, pageSize);

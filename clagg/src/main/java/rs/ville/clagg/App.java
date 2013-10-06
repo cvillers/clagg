@@ -8,6 +8,9 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 
 import org.apache.log4j.*;
 
@@ -31,7 +34,7 @@ public class App
 		handlers.put("craigslist", CraigslistHandler.class);
 	}
 	
-	private static void crawl(DBConnection db) throws SQLException, InstantiationException, IllegalAccessException
+	private static void crawl(DBConnection db, Properties props) throws SQLException, InstantiationException, IllegalAccessException
 	{
     	long crawlID = db.createJob(DBConnection.JOBTYPE_CRAWL);
     	
@@ -50,7 +53,7 @@ public class App
 	}
 	
 
-	private static void validate(DBConnection db, boolean all) throws SQLException, InstantiationException, IllegalAccessException
+	private static void validate(final DBConnection db, Properties props, final boolean all) throws SQLException, InstantiationException, IllegalAccessException
 	{
 		final long PAGE_SIZE = 100;
 		
@@ -60,28 +63,62 @@ public class App
 
     	long total = db.getUnvalidatedListingCount(all);
 
+    	log.debug(String.format("%d total items, will use %d pages", total, total / PAGE_SIZE));
+    	
+		// FIXME we don't actually have a way to relate a listing to the query it came from
+		// so for now, hardcode craigslist, but somehow that will need to get resolved
+		// most likely option is to set it going forward, and to assume craigslist for null
+		final SiteHandler handler = (SiteHandler)handlers.get("craigslist").newInstance();
+    		
+    	class ValidatorThread implements Runnable
+    	{
+    		private long page;
+    		//private final static Logger log = LogManager.getLogger(ValidatorThread.class);
+    		
+    		public ValidatorThread(long page)
+    		{
+    			this.page = page;    			
+    		}
+    		
+			public void run()
+			{
+				try
+				{
+		    		List<Listing> listings = db.getUnvalidatedListings(all, PAGE_SIZE, page);
+		    		
+		    		List<Long> toDelete = new LinkedList<Long>();
+		    		
+			    	for(Listing l: listings)
+			    	{
+			    		if(!handler.validateListingURL(db, l.getURL()))
+			    			toDelete.add(l.getID());
+			    	}
+			    	
+		    		log.info(String.format("Out of %d listings, deleting %d", PAGE_SIZE, toDelete.size()));
+		    		log.info("---------------------------------------------------");
+		    		
+		    		db.deleteListings(toDelete);
+				}
+				catch(SQLException ex)
+				{
+					log.error(String.format("Error while processing page %d", page), ex);
+				}
+			}
+    	}
+
+    	ExecutorService pool = Executors.newFixedThreadPool(Integer.parseInt(props.getProperty("clagg.numthreads")));
+    	
     	for(long page = 0; page <= total / PAGE_SIZE; page++)
     	{
-    		List<Listing> listings = db.getUnvalidatedListings(all, PAGE_SIZE, page);
+    		ValidatorThread thread = new ValidatorThread(page);
     		
-    		List<Long> toDelete = new LinkedList<Long>();
-    		
-	    	for(Listing l: listings)
-	    	{
-	    		// FIXME we don't actually have a way to relate a listing to the query it came from
-	    		// so for now, hardcode craigslist, but somehow that will need to get resolved
-	    		// most likely option is to set it going forward, and to assume craigslist for null
-	    		SiteHandler handler = (SiteHandler)handlers.get("craigslist").newInstance();
-	    		
-	    		if(!handler.validateListingURL(db, l.getURL()))
-	    			toDelete.add(l.getID());
-	    	}
-	    	
-    		log.info(String.format("Out of %d listings, deleting %d", PAGE_SIZE, toDelete.size()));
-    		log.info("---------------------------------------------------");
-    		
-    		db.deleteListings(toDelete);
+    		pool.execute(thread);
     	}
+    	
+    	// wait for all of the threads
+    	pool.shutdown();
+    	
+    	while(!pool.isTerminated());
     	
     	db.finishJob(validateID);
 	}
@@ -121,15 +158,15 @@ public class App
         	DBConnection db = new DBConnection();
         	
         	if(args.length > 0 && args[0].equals("crawl"))
-        		crawl(db);
+        		crawl(db, props);
         	else if(args.length > 0 && args[0].equals("validate"))
-        		validate(db, false);
+        		validate(db, props, false);
         	else if(args.length > 0 && args[0].equals("validate-all"))
-        		validate(db, true);
+        		validate(db, props, true);
         	else
         	{
-        		crawl(db);
-        		validate(db, false);
+        		crawl(db, props);
+        		validate(db, props, false);
         	}
         }
         catch(SQLException ex)
