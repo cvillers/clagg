@@ -109,6 +109,20 @@ public class CraigslistHandler implements SiteHandler
 		try
 		{
 			Jsoup.connect(url).get();
+			
+			// the above will throw, fall through to actual testing
+			
+			Connection listingConn = Jsoup.connect(url.toString()).ignoreHttpErrors(false);
+			
+			Document listing = listingConn.get();
+			
+			Elements test = listing.select("div.removed");
+			
+			if(!test.isEmpty())
+				return false;
+			
+			// so at this point the page exists and there is no element with a deleted message, it must exist
+			
 			return true;
 		}
 		catch(HttpStatusException ex)
